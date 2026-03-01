@@ -1,0 +1,56 @@
+version: '3.8'
+
+# ──────────────────────────────────────────────────────
+# Jenkins CI/CD Server — Docker Compose Setup
+# ──────────────────────────────────────────────────────
+# Usage:
+#   docker compose up -d                  Start Jenkins
+#   docker compose logs -f jenkins        Watch logs
+#   docker compose down                   Stop (keeps data)
+#   docker compose down -v                Stop + delete data
+# ──────────────────────────────────────────────────────
+
+services:
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17   # Latest LTS with Java 17
+    container_name: jenkins
+    restart: unless-stopped
+
+    # Run as root so Jenkins can manage Docker volumes
+    user: root
+    privileged: true
+
+    ports:
+      - "8080:8080"      # Jenkins Web UI
+      - "50000:50000"    # Jenkins Agent JNLP port
+
+    volumes:
+      # Persist Jenkins data (jobs, configs, plugins, credentials)
+      - jenkins_home:/var/jenkins_home
+
+      # Mount Docker socket so Jenkins can run Docker commands
+      # This lets your Jenkinsfile build & push Docker images
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    environment:
+      # Increase JVM memory for larger pipelines
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=true -Xmx1g -Xms512m
+
+      # Skip the setup wizard (optional — remove to use wizard)
+      # - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+
+    # Health check — confirm Jenkins is responding
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+# ──────────────────────────────────────────────────────
+# Named volume for persistent Jenkins data
+# Data survives container restarts and updates
+# ──────────────────────────────────────────────────────
+volumes:
+  jenkins_home:
+    driver: local

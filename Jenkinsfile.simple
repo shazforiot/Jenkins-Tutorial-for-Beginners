@@ -1,0 +1,50 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Jenkinsfile.simple — Minimal starter pipeline (perfect for beginners!)
+// ─────────────────────────────────────────────────────────────────────────────
+// Copy this to the root of ANY project as "Jenkinsfile" to get started.
+// Then customize the sh steps for your language (npm / mvn / pip / go etc.)
+// ─────────────────────────────────────────────────────────────────────────────
+
+pipeline {
+    agent any   // Run on any available Jenkins node
+
+    stages {
+
+        stage('📥 Checkout') {
+            steps {
+                checkout scm    // Pull code from your repository
+            }
+        }
+
+        stage('🏗️ Build') {
+            steps {
+                echo 'Building the application...'
+                sh 'npm install'        // Node.js
+                // sh 'mvn package'     // Java/Maven
+                // sh 'go build ./...'  // Go
+                // sh 'pip install -r requirements.txt' // Python
+            }
+        }
+
+        stage('🧪 Test') {
+            steps {
+                echo 'Running tests...'
+                sh 'npm test'
+            }
+        }
+
+        stage('🚀 Deploy') {
+            steps {
+                echo 'Deploying to staging...'
+                sh 'echo "Add your deploy command here"'
+            }
+        }
+
+    }
+
+    post {
+        success { echo '✅ Pipeline succeeded!' }
+        failure { echo '❌ Pipeline failed — check the logs above.' }
+        always  { cleanWs() }   // Clean up workspace after every run
+    }
+}
