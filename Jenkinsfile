@@ -19,14 +19,26 @@
 
 pipeline {
 
-    // Run inside a Node.js 20 Docker container (no need to install Node on Jenkins)
-    agent {
-        docker {
-            image 'node:20-alpine'
-            // Also install Docker CLI inside the agent container
-            args  '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
+    // ── AGENT OPTIONS ─────────────────────────────────────────────────────────
+    //
+    // OPTION A (default — works with zero extra plugins):
+    //   Uses the built-in Jenkins controller node. Node.js must be installed
+    //   on the Jenkins host, or use a 'tools' block to auto-install it.
+    //
+    agent any
+    //
+    // OPTION B (recommended — cleaner, isolated builds):
+    //   Runs each build inside a fresh node:20-alpine Docker container.
+    //   ⚠️  REQUIRES the "Docker Pipeline" plugin to be installed first:
+    //       Manage Jenkins → Plugins → Available → search "Docker Pipeline" → Install
+    //
+    // agent {
+    //     docker {
+    //         image 'node:20-alpine'
+    //         args  '-v /var/run/docker.sock:/var/run/docker.sock'
+    //     }
+    // }
+    // ──────────────────────────────────────────────────────────────────────────
 
     // ── GLOBAL ENVIRONMENT VARIABLES ──────────────────────────────────────────
     environment {
