@@ -16,6 +16,26 @@
 
 ---
 
+## ⚠️ Common Error — "couldn't find remote ref refs/heads/master"
+
+If you see this error:
+```
+fatal: couldn't find remote ref refs/heads/master
+```
+
+**Cause:** Jenkins defaults to checking out `master`, but GitHub repositories created after 2020 use `main` as the default branch name.
+
+**Fix (30 seconds):**
+1. Open your pipeline job → click **Configure**
+2. Scroll to **Branches to build**
+3. Change `*/master` → `*/main`
+4. Click **Save** → **Build Now** ✅
+
+**Fix it globally** so all new jobs default to `main`:
+> **Manage Jenkins → System → Git plugin → Default branch name** → type `main` → Save
+
+---
+
 ## ⚠️ Common Error — "Invalid agent type docker"
 
 If you see this error when running the pipeline:
@@ -229,6 +249,23 @@ curl -sf http://localhost:8080/login && echo "Jenkins is up"
 
 ## ❓ Troubleshooting
 
+**"couldn't find remote ref refs/heads/master"**
+```
+fatal: couldn't find remote ref refs/heads/master
+```
+Jenkins is trying to checkout a branch called `master`, but your repository's default branch is `main` (GitHub renamed the default in 2020).
+
+Fix — update the branch name in the Jenkins job:
+1. Open the job → click **Configure**
+2. Scroll to **Branches to build**
+3. Change `*/master` → `*/main`
+4. Click **Save** → **Build Now**
+
+> To avoid this for every new job, set the global default:
+> **Manage Jenkins → System → Git plugin → Default branch name** → set to `main`
+
+---
+
 **"Invalid agent type docker" error**
 ```
 Invalid agent type "docker" specified. Must be one of [any, label, none]
@@ -261,6 +298,42 @@ docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 
 **Pipeline fails at Docker push with "unauthorized"**
 Double-check your credential ID in Jenkins matches `docker-hub-creds` in the Jenkinsfile exactly (case-sensitive).
+
+**"ERROR: docker-hub-creds" — pipeline skips all stages**
+```
+ERROR: docker-hub-creds
+```
+The `docker-hub-creds` credential doesn't exist yet in this Jenkins instance. The pipeline uses `withCredentials` scoped to the Push stage only, so all earlier stages (Checkout, Install, Test, Docker Build) will still run — the pipeline only fails when it reaches the Push stage.
+
+Fix — add the credential before running the Push stage:
+1. **Manage Jenkins → Credentials → Global → Add Credentials**
+2. Kind: `Username with password`
+3. Username: your Docker Hub username
+4. Password: your Docker Hub password or access token
+5. ID: `docker-hub-creds` ← must match exactly (case-sensitive)
+
+> **Tip:** If you just want to test the early stages (Checkout, Install, Test), you can simply comment out the entire `📤 Push to Registry` stage — the rest of the pipeline runs fine without it.
+
+---
+
+**"Required context class hudson.FilePath is missing" on cleanWs()**
+```
+org.jenkinsci.plugins.workflow.steps.MissingContextVariableException:
+Required context class hudson.FilePath is missing
+```
+`cleanWs()` needs an active node/workspace context. In the global `post { always }` block the node context is already gone. The `Jenkinsfile` wraps `cleanWs()` inside `node { cleanWs() }` to fix this — if you see this error you're likely using an older copy of the file. Pull the latest version from the repo.
+
+---
+
+**"No such property: GIT_BRANCH" in post block**
+```
+groovy.lang.MissingPropertyException: No such property: GIT_BRANCH
+```
+`GIT_BRANCH` is set by the Git plugin during the Checkout stage. If the pipeline fails *before* checkout runs (e.g. a missing credential aborts the `environment` block), the variable is never populated and the `post { failure }` block crashes trying to print it.
+
+The `Jenkinsfile` uses `env.GIT_BRANCH ?: 'unknown'` as a safe fallback. If you see this error you're using an older copy — pull the latest version.
+
+---
 
 **Container exits immediately**
 ```bash

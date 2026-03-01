@@ -49,10 +49,6 @@ pipeline {
         IMAGE_TAG      = "${DOCKER_REPO}:${BUILD_NUMBER}"
         IMAGE_LATEST   = "${DOCKER_REPO}:latest"
 
-        // Docker Hub credentials (stored in Jenkins Credentials store)
-        // Creates DOCKER_CREDS_USR and DOCKER_CREDS_PSW environment variables
-        DOCKER_CREDS   = credentials('docker-hub-creds')
-
         // Application port
         APP_PORT       = '3000'
 
@@ -178,19 +174,25 @@ pipeline {
             steps {
                 echo "📤 Pushing ${IMAGE_TAG} to Docker Hub..."
 
-                sh """
-                    # Login using credentials from Jenkins Credentials store
-                    # DOCKER_CREDS_PSW and DOCKER_CREDS_USR are auto-injected
-                    echo "${DOCKER_CREDS_PSW}" | docker login \
-                        --username "${DOCKER_CREDS_USR}" \
-                        --password-stdin
+                // Credentials are scoped to this stage only — safe to skip if not yet configured
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-hub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh """
+                        # Login using credentials from Jenkins Credentials store
+                        echo "\${DOCKER_PASS}" | docker login \
+                            --username "\${DOCKER_USER}" \
+                            --password-stdin
 
-                    # Push both tags
-                    docker push ${IMAGE_TAG}
-                    docker push ${IMAGE_LATEST}
+                        # Push both tags
+                        docker push ${IMAGE_TAG}
+                        docker push ${IMAGE_LATEST}
 
-                    echo "✅ Pushed ${IMAGE_TAG} to Docker Hub"
-                """
+                        echo "✅ Pushed ${IMAGE_TAG} to Docker Hub"
+                    """
+                }
             }
         }
 
@@ -236,7 +238,7 @@ pipeline {
             ══════════════════════════════════════════════
             ✅ PIPELINE SUCCEEDED
                Build:  #${BUILD_NUMBER}
-               Branch: ${GIT_BRANCH}
+               Branch: ${env.GIT_BRANCH ?: 'unknown'}
                Time:   ${currentBuild.durationString}
             ══════════════════════════════════════════════
             """
@@ -249,8 +251,8 @@ pipeline {
             ══════════════════════════════════════════════
             ❌ PIPELINE FAILED
                Build:  #${BUILD_NUMBER}
-               Branch: ${GIT_BRANCH}
-               Stage:  ${env.STAGE_NAME}
+               Branch: ${env.GIT_BRANCH ?: 'unknown'}
+               Stage:  ${env.STAGE_NAME ?: 'unknown'}
             ══════════════════════════════════════════════
             """
             // TODO: Add Slack/email notification here
@@ -258,11 +260,13 @@ pipeline {
         }
 
         always {
-            // Logout from Docker registry
+            // Logout from Docker registry (safe no-op if never logged in)
             sh 'docker logout || true'
 
-            // Clean up the workspace to save disk space
-            cleanWs()
+            // cleanWs() requires a node context — node{} ensures the workspace exists
+            node {
+                cleanWs()
+            }
 
             echo "🧹 Workspace cleaned up"
         }
