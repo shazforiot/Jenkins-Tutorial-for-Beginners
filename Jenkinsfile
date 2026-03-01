@@ -42,21 +42,22 @@ pipeline {
 
     // ── NODE.JS TOOL ──────────────────────────────────────────────────────────
     //
-    // Jenkins auto-downloads and installs Node.js before the first stage.
-    // The name "NodeJS-20" must match what you configured in:
-    //   Manage Jenkins → Tools → NodeJS installations → Name
+    // ⚠️  The tools{} block is validated at PARSE TIME — Jenkins refuses to
+    //     start the pipeline if the named tool doesn't exist yet in:
+    //       Manage Jenkins → Tools → NodeJS installations
     //
-    // ⚠️  REQUIRES the "NodeJS" plugin:
-    //     Manage Jenkins → Plugins → Available → search "NodeJS" → Install
-    //
-    // Setup (one-time, 2 minutes):
-    //   1. Install the NodeJS plugin (above)
+    // HOW TO ENABLE (one-time setup, ~2 minutes):
+    //   1. Manage Jenkins → Plugins → Available → search "NodeJS" → Install
     //   2. Manage Jenkins → Tools → NodeJS installations → Add NodeJS
-    //   3. Name: NodeJS-20  |  Version: 20.x  →  Save
+    //        Name: NodeJS-20   (must match exactly)
+    //        Version: 20.x
+    //        → Save
+    //   3. Uncomment the tools block below and commit.
     //
-    tools {
-        nodejs 'NodeJS-20'
-    }
+    // tools {
+    //     nodejs 'NodeJS-20'
+    // }
+    //
     // ──────────────────────────────────────────────────────────────────────────
 
     // ── GLOBAL ENVIRONMENT VARIABLES ──────────────────────────────────────────
@@ -115,9 +116,24 @@ pipeline {
             steps {
                 echo "📦 Installing npm packages..."
 
-                // 'npm ci' is faster and more reliable than 'npm install' in CI
-                // It respects the exact versions in package-lock.json
-                sh 'npm ci --prefer-offline'
+                sh '''
+                    if ! command -v npm >/dev/null 2>&1; then
+                        echo ""
+                        echo "══════════════════════════════════════════════"
+                        echo "  ⚠️  Node.js / npm not found on this agent."
+                        echo "  Fix — enable the tools block in Jenkinsfile:"
+                        echo "    1. Manage Jenkins → Plugins → install NodeJS"
+                        echo "    2. Manage Jenkins → Tools → NodeJS installations"
+                        echo "       Name: NodeJS-20  |  Version: 20.x  → Save"
+                        echo "    3. Uncomment tools { nodejs 'NodeJS-20' } in"
+                        echo "       the Jenkinsfile and re-run the build."
+                        echo "══════════════════════════════════════════════"
+                        exit 1
+                    fi
+
+                    # npm ci: clean, reproducible install from package-lock.json
+                    npm ci --prefer-offline
+                '''
 
                 echo "✅ Dependencies installed successfully"
             }

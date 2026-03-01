@@ -311,21 +311,30 @@ docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 **Pipeline fails at Docker push with "unauthorized"**
 Double-check your credential ID in Jenkins matches `docker-hub-creds` in the Jenkinsfile exactly (case-sensitive).
 
-**"npm: not found" — Node.js not installed on the agent**
+**"npm: not found" / `tools` NodeJS parse error — Node.js not configured**
 ```
-npm: not found
-error: script returned exit code 127
-```
-The Jenkins agent has no Node.js installed. The `Jenkinsfile` uses `tools { nodejs 'NodeJS-20' }` to auto-install it, but this requires the **NodeJS** plugin and a matching tool configuration.
+# Runtime error
+npm: not found  (exit code 127)
 
-Fix — two steps:
+# Parse-time error (pipeline won't start at all)
+Tool type "nodejs" does not have an install of "NodeJS-20" configured
+```
+Both errors mean Node.js isn't available on the Jenkins agent. The `tools { nodejs '...' }` block is validated at **parse time** — if the tool name doesn't exist in Jenkins yet, the entire pipeline refuses to start. The `Jenkinsfile` keeps that block commented out so the pipeline always starts; it prints a clear message if `npm` isn't found at runtime.
+
+Fix — two steps (takes ~2 minutes):
 1. Install the plugin: **Manage Jenkins → Plugins → Available → search "NodeJS" → Install**
 2. Configure the tool: **Manage Jenkins → Tools → NodeJS installations → Add NodeJS**
-   - Name: `NodeJS-20` (must match the Jenkinsfile exactly)
+   - Name: `NodeJS-20` ← must match the Jenkinsfile exactly (case-sensitive)
    - Version: `20.x`
    - Click **Save**
+3. In the `Jenkinsfile`, uncomment the `tools` block:
+   ```groovy
+   tools {
+       nodejs 'NodeJS-20'
+   }
+   ```
 
-Then re-run the build — Jenkins downloads Node.js automatically.
+Jenkins downloads Node.js automatically before the first stage on the next build.
 
 ---
 
