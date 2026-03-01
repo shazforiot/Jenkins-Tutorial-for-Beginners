@@ -8,6 +8,17 @@
 pipeline {
     agent any   // Run on any available Jenkins node
 
+    // ── NODE.JS TOOL ────────────────────────────────────────────────────────
+    // Auto-installs Node.js before the first stage.
+    // Requires ONE-TIME setup in Jenkins UI:
+    //   1. Manage Jenkins → Plugins → Available → search "NodeJS" → Install
+    //   2. Manage Jenkins → Tools → NodeJS installations → Add NodeJS
+    //      Name: NodeJS-20  |  Version: 20.x  →  Save
+    tools {
+        nodejs 'NodeJS-20'
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
     stages {
 
         stage('📥 Checkout') {

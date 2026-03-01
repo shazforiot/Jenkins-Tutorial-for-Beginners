@@ -214,6 +214,13 @@ pipeline {
                     """
                 }
             }
+
+            post {
+                always {
+                    // Logout is scoped here — guaranteed node context, only runs if this stage ran
+                    sh 'docker logout || true'
+                }
+            }
         }
 
         // ── STAGE 7: DEPLOY TO STAGING ────────────────────────────────────────
@@ -280,10 +287,9 @@ pipeline {
         }
 
         always {
-            // Logout from Docker registry (safe no-op if never logged in)
-            sh 'docker logout || true'
-
             // Clean up the workspace to save disk space
+            // Note: cleanWs() only runs when a node/workspace was successfully allocated.
+            // If the pipeline fails during tool install (before any stage), this is a no-op.
             cleanWs()
 
             echo "🧹 Workspace cleaned up"
