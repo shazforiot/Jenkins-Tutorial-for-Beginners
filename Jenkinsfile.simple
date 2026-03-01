@@ -30,17 +30,31 @@ pipeline {
         stage('🏗️ Build') {
             steps {
                 echo 'Building the application...'
-                sh 'npm install'        // Node.js
-                // sh 'mvn package'     // Java/Maven
-                // sh 'go build ./...'  // Go
-                // sh 'pip install -r requirements.txt' // Python
+                sh '''
+                    if [ -f package.json ]; then
+                        npm install
+                    else
+                        echo "ℹ️  No package.json found — add your Node.js app to this repo."
+                        echo "    Replace this step with your build command:"
+                        echo "      Node.js  →  npm install"
+                        echo "      Java     →  mvn package"
+                        echo "      Go       →  go build ./..."
+                        echo "      Python   →  pip install -r requirements.txt"
+                    fi
+                '''
             }
         }
 
         stage('🧪 Test') {
             steps {
                 echo 'Running tests...'
-                sh 'npm test'
+                sh '''
+                    if [ -f package.json ]; then
+                        npm test
+                    else
+                        echo "ℹ️  No test suite found — skipping. Add npm test / pytest / go test etc."
+                    fi
+                '''
             }
         }
 
