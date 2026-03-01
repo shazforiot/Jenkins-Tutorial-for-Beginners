@@ -263,10 +263,8 @@ pipeline {
             // Logout from Docker registry (safe no-op if never logged in)
             sh 'docker logout || true'
 
-            // cleanWs() requires a node context — node{} ensures the workspace exists
-            node {
-                cleanWs()
-            }
+            // Clean up the workspace to save disk space
+            cleanWs()
 
             echo "🧹 Workspace cleaned up"
         }

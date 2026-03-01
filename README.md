@@ -321,7 +321,7 @@ Fix — add the credential before running the Push stage:
 org.jenkinsci.plugins.workflow.steps.MissingContextVariableException:
 Required context class hudson.FilePath is missing
 ```
-`cleanWs()` needs an active node/workspace context. In the global `post { always }` block the node context is already gone. The `Jenkinsfile` wraps `cleanWs()` inside `node { cleanWs() }` to fix this — if you see this error you're likely using an older copy of the file. Pull the latest version from the repo.
+`cleanWs()` needs an active node/workspace context. This error appears when the pipeline fails *before* an agent is allocated (e.g. a credential binding in the global `environment` block aborts startup). Now that credentials are scoped with `withCredentials` inside the Push stage, the agent is always allocated and `cleanWs()` in `post { always }` works normally. If you see this error, ensure no `credentials()` calls remain in the global `environment` block.
 
 ---
 
