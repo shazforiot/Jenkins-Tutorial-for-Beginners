@@ -118,12 +118,24 @@ Go to **Manage Jenkins → Plugins → Available** and search for:
 
 | Plugin | Why |
 |--------|-----|
+| **NodeJS** | Auto-install Node.js on the agent — **required to run `npm` commands** |
 | **Blue Ocean** | Beautiful visual pipeline UI |
 | **Docker Pipeline** | Build & push Docker images from Jenkinsfile |
 | **GitHub Integration** | Auto-trigger builds on `git push` via webhooks |
 | **JUnit** | Publish test reports inside Jenkins UI |
 | **Slack Notifier** | Build success/failure alerts to Slack |
 | **Credentials Binding** | Safely inject secrets into pipelines |
+
+### NodeJS Plugin — one-time setup after installing
+
+After installing the **NodeJS** plugin, configure the Node.js version:
+
+1. **Manage Jenkins → Tools → NodeJS installations → Add NodeJS**
+2. Name: `NodeJS-20` ← must match the `tools { nodejs 'NodeJS-20' }` in the `Jenkinsfile` exactly
+3. Version: select **20.x** (LTS)
+4. Click **Save**
+
+Jenkins will automatically download and install Node.js before the first build runs.
 
 ---
 
@@ -298,6 +310,24 @@ docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 
 **Pipeline fails at Docker push with "unauthorized"**
 Double-check your credential ID in Jenkins matches `docker-hub-creds` in the Jenkinsfile exactly (case-sensitive).
+
+**"npm: not found" — Node.js not installed on the agent**
+```
+npm: not found
+error: script returned exit code 127
+```
+The Jenkins agent has no Node.js installed. The `Jenkinsfile` uses `tools { nodejs 'NodeJS-20' }` to auto-install it, but this requires the **NodeJS** plugin and a matching tool configuration.
+
+Fix — two steps:
+1. Install the plugin: **Manage Jenkins → Plugins → Available → search "NodeJS" → Install**
+2. Configure the tool: **Manage Jenkins → Tools → NodeJS installations → Add NodeJS**
+   - Name: `NodeJS-20` (must match the Jenkinsfile exactly)
+   - Version: `20.x`
+   - Click **Save**
+
+Then re-run the build — Jenkins downloads Node.js automatically.
+
+---
 
 **"ERROR: docker-hub-creds" — pipeline skips all stages**
 ```

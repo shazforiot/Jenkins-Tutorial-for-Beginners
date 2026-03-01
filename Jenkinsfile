@@ -40,6 +40,25 @@ pipeline {
     // }
     // ──────────────────────────────────────────────────────────────────────────
 
+    // ── NODE.JS TOOL ──────────────────────────────────────────────────────────
+    //
+    // Jenkins auto-downloads and installs Node.js before the first stage.
+    // The name "NodeJS-20" must match what you configured in:
+    //   Manage Jenkins → Tools → NodeJS installations → Name
+    //
+    // ⚠️  REQUIRES the "NodeJS" plugin:
+    //     Manage Jenkins → Plugins → Available → search "NodeJS" → Install
+    //
+    // Setup (one-time, 2 minutes):
+    //   1. Install the NodeJS plugin (above)
+    //   2. Manage Jenkins → Tools → NodeJS installations → Add NodeJS
+    //   3. Name: NodeJS-20  |  Version: 20.x  →  Save
+    //
+    tools {
+        nodejs 'NodeJS-20'
+    }
+    // ──────────────────────────────────────────────────────────────────────────
+
     // ── GLOBAL ENVIRONMENT VARIABLES ──────────────────────────────────────────
     environment {
         // Docker Hub image name — change to your username/repo
